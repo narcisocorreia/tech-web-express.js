@@ -2,6 +2,7 @@
   "name": "auth-app",
   "version": "1.0.0",
   "scripts": {
+    "install:all": "npm install --prefix auth-backend && npm install --prefix auth-frontend",
     "start": "concurrently --names \"backend,frontend\" --prefix-colors \"cyan,magenta\" \"npm run start --prefix auth-backend\" \"npm run start --prefix auth-frontend\""
   },
   "devDependencies": {

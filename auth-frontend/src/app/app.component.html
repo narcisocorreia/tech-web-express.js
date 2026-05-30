@@ -50,17 +50,6 @@
           <i class="bi bi-person-circle"></i> Profile
         </a>
       </li>
-      @if (authService.getRole() === "admin") {
-        <li class="nav-item">
-          <a
-            class="nav-link d-flex align-items-center gap-2"
-            routerLink="/admin"
-            routerLinkActive="active"
-          >
-            <i class="bi bi-shield-fill-check"></i> Admin
-          </a>
-        </li>
-      }
     </ul>
   </div>
 </nav>

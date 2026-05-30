@@ -3,7 +3,6 @@ const cors = require('cors');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const https = require('https');
 const Database = require('better-sqlite3');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -173,9 +172,9 @@ app.post('/auth/register', async (req, res) => {
     });
   }
 
-  if (password.length < 8 || !/[A-Z]/.test(password) || !/[0-9]/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
+  if (password.length < 6) {
     return res.status(400).json({
-      message: 'Password must be at least 8 characters and contain an uppercase letter, a number and a special character'
+      message: 'Password must be at least 6 characters'
     });
   }
 
@@ -371,12 +370,10 @@ app.put('/auth/profile', authenticateToken, async (req, res) => {
   const newName = name ?? current.name;
   const newEmail = email ?? current.email;
 
-  if (password) {
-    if (password.length < 8 || !/[A-Z]/.test(password) || !/[0-9]/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
-      return res.status(400).json({
-        message: 'Password must be at least 8 characters and contain an uppercase letter, a number and a special character'
-      });
-    }
+  if (password && password.length < 6) {
+    return res.status(400).json({
+      message: 'Password must be at least 6 characters'
+    });
   }
 
   const newPassword = password ? await bcrypt.hash(password, 10) : current.password;
@@ -496,44 +493,6 @@ app.post('/auth/logout', (req, res) => {
     db.prepare('DELETE FROM refresh_tokens WHERE token = ?').run(refreshToken);
   }
   res.json({ message: 'Logged out successfully' });
-});
-
-// ---------------------------------------------------------------------------
-// Football proxy via TheSportsDB — sem registo, chave demo pública "3"
-// Docs: https://www.thesportsdb.com/api.php
-// ---------------------------------------------------------------------------
-const SPORTSDB_HOST = 'www.thesportsdb.com';
-const SPORTSDB_KEY = '3';
-
-function sportsDbProxy(path, res) {
-  const options = {
-    hostname: SPORTSDB_HOST,
-    path: `/api/v1/json/${SPORTSDB_KEY}${path}`,
-    method: 'GET',
-    headers: { Accept: 'application/json' }
-  };
-
-  const proxyReq = https.request(options, (proxyRes) => {
-    res.status(proxyRes.statusCode).set('Content-Type', 'application/json');
-    proxyRes.pipe(res);
-  });
-
-  proxyReq.on('error', () => {
-    res.status(502).json({ message: 'Erro ao ligar ao TheSportsDB' });
-  });
-
-  proxyReq.end();
-}
-
-// Todas as ligas de futebol
-app.get('/football/leagues', (_req, res) => {
-  sportsDbProxy('/search_all_leagues.php?s=Soccer', res);
-});
-
-// Classificação de uma liga por época (ex: 2024-2025)
-app.get('/football/standings/:leagueId', (req, res) => {
-  const season = req.query.season || '2024-2025';
-  sportsDbProxy(`/lookuptable.php?l=${req.params.leagueId}&s=${encodeURIComponent(season)}`, res);
 });
 
 app.listen(PORT, () => {

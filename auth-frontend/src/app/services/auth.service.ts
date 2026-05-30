@@ -60,17 +60,6 @@ export class AuthService {
     return !!this.getToken();
   }
 
-  getRole(): string | null {
-    const token = this.getToken();
-    if (!token) return null;
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      return payload.role ?? null;
-    } catch {
-      return null;
-    }
-  }
-
   logout() {
     const refreshToken = this.getRefreshToken();
     if (refreshToken) {
@@ -106,23 +95,5 @@ export class AuthService {
 
   deleteProfile() {
     return this.http.delete(`${this.apiUrl}/profile`);
-  }
-
-  forgotPassword(email: string) {
-    return this.http.post(`${this.apiUrl}/forgot-password`, { email });
-  }
-
-  resetPassword(token: string, password: string) {
-    return this.http.post(`${this.apiUrl}/reset-password`, { token, password });
-  }
-
-  confirmEmail(token: string) {
-    return this.http.get(`${this.apiUrl}/confirm`, { params: { token } });
-  }
-
-  uploadAvatar(file: File) {
-    const formData = new FormData();
-    formData.append('avatar', file);
-    return this.http.post(`${this.apiUrl}/avatar`, formData);
   }
 }

@@ -19,11 +19,6 @@ export class ProfileComponent implements OnInit {
   message = '';
   confirmingDelete = false;
 
-  // Avatar upload
-  selectedFile: File | null = null;
-  previewUrl: string | null = null;
-  uploading = false;
-
   ngOnInit() {
     if (!this.authService.isLoggedIn()) {
       this.router.navigate(['/login']);
@@ -38,32 +33,6 @@ export class ProfileComponent implements OnInit {
         this.message = 'Session expired. Please login again.';
         this.authService.logout();
         this.router.navigate(['/login']);
-      },
-    });
-  }
-
-  onFileSelected(event: Event) {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-    this.selectedFile = file;
-    this.previewUrl = URL.createObjectURL(file);
-  }
-
-  uploadAvatar() {
-    if (!this.selectedFile) return;
-    this.uploading = true;
-    this.authService.uploadAvatar(this.selectedFile).subscribe({
-      next: (res: any) => {
-        this.user.avatarUrl = res.avatarUrl;
-        this.selectedFile = null;
-        this.previewUrl = null;
-        this.uploading = false;
-        this.message = 'Avatar updated!';
-      },
-      error: (err) => {
-        this.message = err.error?.message || 'Failed to upload avatar.';
-        this.uploading = false;
       },
     });
   }
