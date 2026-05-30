@@ -1,0 +1,10 @@
+{
+  "name": "auth-app",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "concurrently --names \"backend,frontend\" --prefix-colors \"cyan,magenta\" \"npm run start --prefix auth-backend\" \"npm run start --prefix auth-frontend\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
