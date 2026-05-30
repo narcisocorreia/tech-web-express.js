@@ -1,0 +1,151 @@
+<div class="auth-bg auth-bg-edit">
+  <div class="auth-card card auth-card-wide">
+    <!-- Card Header -->
+    <div class="auth-card-header">
+      <div class="d-flex align-items-center gap-3">
+        <a routerLink="/profile" class="btn btn-sm btn-back-ghost">
+          <i class="bi bi-arrow-left"></i>
+        </a>
+        <div>
+          <div class="auth-icon-box auth-icon-box-sm">
+            <i class="bi bi-pencil-fill"></i>
+          </div>
+        </div>
+        <div>
+          <h3 class="fw-bold mb-0 edit-header-title">Edit Profile</h3>
+          <p class="mb-0 small auth-header-sub">Update your account info</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-body auth-card-body">
+      @if (successMessage) {
+        <div class="alert alert-success d-flex align-items-center gap-2 mb-4">
+          <i class="bi bi-check-circle-fill flex-shrink-0"></i>
+          {{ successMessage }}
+        </div>
+      }
+
+      @if (errorMessage) {
+        <div class="alert alert-danger d-flex align-items-center gap-2 mb-4">
+          <i class="bi bi-exclamation-triangle-fill flex-shrink-0"></i>
+          {{ errorMessage }}
+        </div>
+      }
+
+      <!-- Name -->
+      <div class="mb-3">
+        <label class="form-label">Full name</label>
+        <div class="input-group has-validation">
+          <span class="input-group-text"><i class="bi bi-person"></i></span>
+          <input
+            class="form-control form-control-x"
+            [class.is-invalid]="errors.name"
+            placeholder="Your full name"
+            [(ngModel)]="name"
+          />
+          @if (errors.name) {
+            <div class="invalid-feedback">{{ errors.name }}</div>
+          }
+        </div>
+      </div>
+
+      <!-- Email -->
+      <div class="mb-3">
+        <label class="form-label">Email address</label>
+        <div class="input-group has-validation">
+          <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+          <input
+            class="form-control form-control-x"
+            [class.is-invalid]="errors.email"
+            type="email"
+            placeholder="you@example.com"
+            [(ngModel)]="email"
+          />
+          @if (errors.email) {
+            <div class="invalid-feedback">{{ errors.email }}</div>
+          }
+        </div>
+      </div>
+
+      <!-- New Password -->
+      <div class="mb-3">
+        <label class="form-label"
+          >New password <span class="password-optional">(optional)</span></label
+        >
+        <div class="input-group has-validation has-toggle">
+          <span class="input-group-text"><i class="bi bi-lock"></i></span>
+          <input
+            class="form-control form-control-x"
+            [class.is-invalid]="errors.password"
+            [type]="showPassword ? 'text' : 'password'"
+            placeholder="Leave blank to keep current"
+            [(ngModel)]="password"
+          />
+          <button
+            type="button"
+            class="btn btn-eye"
+            (click)="showPassword = !showPassword"
+            tabindex="-1"
+          >
+            <i [class]="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+          </button>
+          @if (errors.password) {
+            <div class="invalid-feedback">{{ errors.password }}</div>
+          }
+        </div>
+        <div class="form-text mt-1 password-hint">
+          Min. 8 chars, uppercase, number and special character.
+        </div>
+      </div>
+
+      <!-- Confirm Password -->
+      <div class="mb-4">
+        <label class="form-label">Confirm new password</label>
+        <div class="input-group has-validation has-toggle">
+          <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
+          <input
+            class="form-control form-control-x"
+            [class.is-invalid]="errors.confirmPassword"
+            [type]="showConfirmPassword ? 'text' : 'password'"
+            placeholder="Repeat the new password"
+            [(ngModel)]="confirmPassword"
+          />
+          <button
+            type="button"
+            class="btn btn-eye"
+            (click)="showConfirmPassword = !showConfirmPassword"
+            tabindex="-1"
+          >
+            <i
+              [class]="showConfirmPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"
+            ></i>
+          </button>
+          @if (errors.confirmPassword) {
+            <div class="invalid-feedback">{{ errors.confirmPassword }}</div>
+          }
+        </div>
+      </div>
+
+      <button
+        class="btn btn-brand w-100 py-2 mb-2"
+        (click)="save()"
+        [disabled]="isLoading"
+      >
+        @if (isLoading) {
+          <span
+            class="spinner-border spinner-border-sm me-2"
+            role="status"
+          ></span
+          >Saving...
+        } @else {
+          <i class="bi bi-floppy me-2"></i>Save Changes
+        }
+      </button>
+
+      <a class="btn btn-outline-brand w-100" routerLink="/profile">
+        <i class="bi bi-x-circle me-2"></i>Cancel
+      </a>
+    </div>
+  </div>
+</div>

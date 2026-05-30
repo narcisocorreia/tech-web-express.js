@@ -1,0 +1,128 @@
+import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+
+import { environment } from '../../environments/environment';
+
+interface RegisterRequest {
+  name: string;
+  email: string;
+  password: string;
+}
+
+interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+interface LoginResponse {
+  message: string;
+  token: string;
+  refreshToken: string;
+  user: {
+    id: number;
+    name: string;
+    email: string;
+  };
+}
+
+interface UpdateProfileRequest {
+  name?: string;
+  email?: string;
+  password?: string;
+}
+
+@Injectable({
+  providedIn: 'root',
+})
+export class AuthService {
+  private http = inject(HttpClient);
+
+  private apiUrl = environment.apiUrl + '/auth';
+
+  // ── Token management ──────────────────────────────
+  getToken() {
+    return localStorage.getItem('token');
+  }
+
+  saveToken(token: string) {
+    localStorage.setItem('token', token);
+  }
+
+  getRefreshToken() {
+    return localStorage.getItem('refreshToken');
+  }
+
+  saveRefreshToken(token: string) {
+    localStorage.setItem('refreshToken', token);
+  }
+
+  isLoggedIn() {
+    return !!this.getToken();
+  }
+
+  getRole(): string | null {
+    const token = this.getToken();
+    if (!token) return null;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.role ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  logout() {
+    const refreshToken = this.getRefreshToken();
+    if (refreshToken) {
+      // Invalida o refresh token no servidor (best-effort)
+      this.http.post(`${this.apiUrl}/logout`, { refreshToken }).subscribe();
+    }
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
+  }
+
+  // ── Auth endpoints (headers geridos pelo interceptor) ──
+  register(data: RegisterRequest) {
+    return this.http.post(`${this.apiUrl}/register`, data);
+  }
+
+  login(data: LoginRequest) {
+    return this.http.post<LoginResponse>(`${this.apiUrl}/login`, data);
+  }
+
+  refreshAccessToken() {
+    return this.http.post(`${this.apiUrl}/refresh`, {
+      refreshToken: this.getRefreshToken(),
+    });
+  }
+
+  getProfile() {
+    return this.http.get(`${this.apiUrl}/me`);
+  }
+
+  updateProfile(data: UpdateProfileRequest) {
+    return this.http.put(`${this.apiUrl}/profile`, data);
+  }
+
+  deleteProfile() {
+    return this.http.delete(`${this.apiUrl}/profile`);
+  }
+
+  forgotPassword(email: string) {
+    return this.http.post(`${this.apiUrl}/forgot-password`, { email });
+  }
+
+  resetPassword(token: string, password: string) {
+    return this.http.post(`${this.apiUrl}/reset-password`, { token, password });
+  }
+
+  confirmEmail(token: string) {
+    return this.http.get(`${this.apiUrl}/confirm`, { params: { token } });
+  }
+
+  uploadAvatar(file: File) {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    return this.http.post(`${this.apiUrl}/avatar`, formData);
+  }
+}

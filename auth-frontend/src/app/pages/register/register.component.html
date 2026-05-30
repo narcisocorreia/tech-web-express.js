@@ -1,0 +1,134 @@
+<div class="auth-bg">
+  <div class="auth-card card auth-card-wide">
+    <!-- Card Header -->
+    <div class="auth-card-header">
+      <div class="auth-icon-box">
+        <i class="bi bi-person-plus-fill"></i>
+      </div>
+      <h3 class="fw-bold mb-1 auth-header-title">Create Account</h3>
+      <p class="mb-0 small auth-header-sub">Join us today — it's free!</p>
+    </div>
+
+    <!-- Card Body -->
+    <div class="card-body auth-card-body">
+      @if (message) {
+        <div class="alert alert-info d-flex align-items-center gap-2 mb-4">
+          <i class="bi bi-info-circle-fill flex-shrink-0"></i>
+          {{ message }}
+        </div>
+      }
+
+      <!-- Name -->
+      <div class="mb-3">
+        <label class="form-label">Full name</label>
+        <div class="input-group has-validation">
+          <span class="input-group-text"><i class="bi bi-person"></i></span>
+          <input
+            class="form-control form-control-x"
+            [class.is-invalid]="errors.name"
+            placeholder="Your full name"
+            [(ngModel)]="name"
+          />
+          @if (errors.name) {
+            <div class="invalid-feedback">{{ errors.name }}</div>
+          }
+        </div>
+      </div>
+
+      <!-- Email -->
+      <div class="mb-3">
+        <label class="form-label">Email address</label>
+        <div class="input-group has-validation">
+          <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+          <input
+            class="form-control form-control-x"
+            [class.is-invalid]="errors.email"
+            type="email"
+            placeholder="you@example.com"
+            [(ngModel)]="email"
+          />
+          @if (errors.email) {
+            <div class="invalid-feedback">{{ errors.email }}</div>
+          }
+        </div>
+      </div>
+
+      <!-- Password -->
+      <div class="mb-3">
+        <label class="form-label">Password</label>
+        <div class="input-group has-validation has-toggle">
+          <span class="input-group-text"><i class="bi bi-lock"></i></span>
+          <input
+            class="form-control form-control-x"
+            [class.is-invalid]="errors.password"
+            [type]="showPassword ? 'text' : 'password'"
+            placeholder="Min. 8 chars, uppercase, number, symbol"
+            [(ngModel)]="password"
+          />
+          <button
+            type="button"
+            class="btn btn-eye"
+            (click)="showPassword = !showPassword"
+            tabindex="-1"
+          >
+            <i [class]="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+          </button>
+          @if (errors.password) {
+            <div class="invalid-feedback">{{ errors.password }}</div>
+          }
+        </div>
+      </div>
+
+      <!-- Confirm Password -->
+      <div class="mb-4">
+        <label class="form-label">Confirm password</label>
+        <div class="input-group has-validation has-toggle">
+          <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
+          <input
+            class="form-control form-control-x"
+            [class.is-invalid]="errors.confirmPassword"
+            [type]="showConfirmPassword ? 'text' : 'password'"
+            placeholder="Repeat your password"
+            [(ngModel)]="confirmPassword"
+          />
+          <button
+            type="button"
+            class="btn btn-eye"
+            (click)="showConfirmPassword = !showConfirmPassword"
+            tabindex="-1"
+          >
+            <i
+              [class]="showConfirmPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"
+            ></i>
+          </button>
+          @if (errors.confirmPassword) {
+            <div class="invalid-feedback">{{ errors.confirmPassword }}</div>
+          }
+        </div>
+      </div>
+
+      <button
+        class="btn btn-brand w-100 py-2"
+        (click)="register()"
+        [disabled]="isLoading"
+      >
+        @if (isLoading) {
+          <span
+            class="spinner-border spinner-border-sm me-2"
+            role="status"
+          ></span
+          >Creating account...
+        } @else {
+          <i class="bi bi-person-check me-2"></i>Create Account
+        }
+      </button>
+
+      <div class="divider-text">or</div>
+
+      <p class="text-center mb-0 auth-footer-text">
+        Already have an account?
+        <a routerLink="/login" class="auth-link">Sign in here</a>
+      </p>
+    </div>
+  </div>
+</div>

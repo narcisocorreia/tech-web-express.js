@@ -1,0 +1,124 @@
+<div class="container py-4">
+  <h2 class="mb-4">Admin — Users</h2>
+
+  @if (message) {
+    <div class="alert alert-success alert-dismissible">
+      {{ message }}
+      <button type="button" class="btn-close" (click)="message = ''"></button>
+    </div>
+  }
+
+  @if (error) {
+    <div class="alert alert-danger alert-dismissible">
+      {{ error }}
+      <button type="button" class="btn-close" (click)="error = ''"></button>
+    </div>
+  }
+
+  <!-- Search -->
+  <div class="mb-3 d-flex gap-2 align-items-center">
+    <input
+      type="text"
+      class="form-control"
+      style="max-width: 300px"
+      placeholder="Search by name or email..."
+      [(ngModel)]="search"
+      (ngModelChange)="onSearchChange()"
+    />
+    <span class="text-muted small">{{ meta.total }} user(s) found</span>
+  </div>
+
+  <table class="table table-bordered table-hover">
+    <thead class="table-dark">
+      <tr>
+        <th class="cursor-pointer" (click)="setSort('id')">
+          # <i [class]="'bi ' + sortIcon('id')"></i>
+        </th>
+        <th class="cursor-pointer" (click)="setSort('name')">
+          Name <i [class]="'bi ' + sortIcon('name')"></i>
+        </th>
+        <th class="cursor-pointer" (click)="setSort('email')">
+          Email <i [class]="'bi ' + sortIcon('email')"></i>
+        </th>
+        <th class="cursor-pointer" (click)="setSort('role')">
+          Role <i [class]="'bi ' + sortIcon('role')"></i>
+        </th>
+        <th>Verified</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (user of users; track user.id) {
+        <tr>
+          <td>{{ user.id }}</td>
+          <td>{{ user.name }}</td>
+          <td>{{ user.email }}</td>
+          <td>
+            <span
+              [class]="
+                'badge bg-' + (user.role === 'admin' ? 'danger' : 'secondary')
+              "
+            >
+              {{ user.role }}
+            </span>
+          </td>
+          <td>
+            <span
+              [class]="
+                'badge bg-' +
+                (user.is_verified ? 'success' : 'warning text-dark')
+              "
+            >
+              {{ user.is_verified ? "Yes" : "No" }}
+            </span>
+          </td>
+          <td class="d-flex gap-2">
+            @if (user.role !== "admin") {
+              <button
+                class="btn btn-sm btn-outline-danger"
+                (click)="changeRole(user, 'admin')"
+              >
+                Make Admin
+              </button>
+            } @else {
+              <button
+                class="btn btn-sm btn-outline-secondary"
+                (click)="changeRole(user, 'user')"
+              >
+                Make User
+              </button>
+            }
+            @if (user.id !== currentUserId()) {
+              <button class="btn btn-sm btn-danger" (click)="deleteUser(user)">
+                Delete
+              </button>
+            }
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+
+  <!-- Pagination -->
+  @if (meta.totalPages > 1) {
+    <div class="d-flex align-items-center gap-3">
+      <button
+        class="btn btn-outline-secondary btn-sm"
+        [disabled]="page <= 1"
+        (click)="goToPage(page - 1)"
+      >
+        &laquo; Previous
+      </button>
+      <span class="text-muted small"
+        >Page {{ meta.page }} of {{ meta.totalPages }}</span
+      >
+      <button
+        class="btn btn-outline-secondary btn-sm"
+        [disabled]="page >= meta.totalPages"
+        (click)="goToPage(page + 1)"
+      >
+        Next &raquo;
+      </button>
+    </div>
+  }
+</div>
