@@ -49,6 +49,18 @@ db.exec(`
     token TEXT NOT NULL UNIQUE,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  );
+  CREATE TABLE IF NOT EXISTS tasks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    description TEXT,
+    status TEXT NOT NULL DEFAULT 'pending',
+    priority TEXT NOT NULL DEFAULT 'medium',
+    assigned_to INTEGER,
+    created_by INTEGER NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
   )
 `);
 
@@ -493,6 +505,111 @@ app.post('/auth/logout', (req, res) => {
     db.prepare('DELETE FROM refresh_tokens WHERE token = ?').run(refreshToken);
   }
   res.json({ message: 'Logged out successfully' });
+});
+
+// ── TASKS ──────────────────────────────────────────────────────────────────
+
+app.post('/tasks', authenticateToken, (req, res) => {
+  const { title, description, status, priority } = req.body;
+
+  if (!title) {
+    return res.status(400).json({ message: 'Title is required' });
+  }
+
+  const validStatuses   = ['pending', 'in_progress', 'done'];
+  const validPriorities = ['low', 'medium', 'high'];
+
+  if (status && !validStatuses.includes(status)) {
+    return res.status(400).json({ message: 'Invalid status' });
+  }
+  if (priority && !validPriorities.includes(priority)) {
+    return res.status(400).json({ message: 'Invalid priority' });
+  }
+
+  const result = db.prepare(
+    'INSERT INTO tasks (title, description, status, priority, created_by) VALUES (?, ?, ?, ?, ?)'
+  ).run(title, description || null, status || 'pending', priority || 'medium', req.user.id);
+
+  res.status(201).json({ message: 'Task created', id: result.lastInsertRowid });
+});
+
+app.get('/tasks', authenticateToken, (req, res) => {
+  const page   = Math.max(1, parseInt(req.query.page)  || 1);
+  const limit  = Math.min(50, Math.max(1, parseInt(req.query.limit) || 10));
+  const offset = (page - 1) * limit;
+  const search = req.query.search ? `%${req.query.search}%` : '%';
+  const status = req.query.status || null;
+
+  const allowedSort  = ['title', 'status', 'priority', 'created_at'];
+  const allowedOrder = ['ASC', 'DESC'];
+  const sort  = allowedSort.includes(req.query.sort) ? req.query.sort : 'created_at';
+  const order = allowedOrder.includes(req.query.order?.toUpperCase()) ? req.query.order.toUpperCase() : 'DESC';
+
+  let where  = 'WHERE t.created_by = ? AND t.title LIKE ?';
+  let params = [req.user.id, search];
+
+  if (status) {
+    where += ' AND t.status = ?';
+    params.push(status);
+  }
+
+  const total = db.prepare(
+    `SELECT COUNT(*) as count FROM tasks t ${where}`
+  ).get(...params).count;
+
+  const tasks = db.prepare(
+    `SELECT t.*, u.name as assigned_to_name
+     FROM tasks t
+     LEFT JOIN users u ON t.assigned_to = u.id
+     ${where}
+     ORDER BY t.${sort} ${order}
+     LIMIT ? OFFSET ?`
+  ).all(...params, limit, offset);
+
+  res.json({
+    data: tasks,
+    meta: { total, page, limit, totalPages: Math.ceil(total / limit) }
+  });
+});
+
+app.put('/tasks/:id', authenticateToken, (req, res) => {
+  const task = db.prepare('SELECT * FROM tasks WHERE id = ? AND created_by = ?')
+    .get(req.params.id, req.user.id);
+
+  if (!task) return res.status(404).json({ message: 'Task not found' });
+
+  const { title, description, status, priority } = req.body;
+  const validStatuses   = ['pending', 'in_progress', 'done'];
+  const validPriorities = ['low', 'medium', 'high'];
+
+  if (status && !validStatuses.includes(status)) {
+    return res.status(400).json({ message: 'Invalid status' });
+  }
+  if (priority && !validPriorities.includes(priority)) {
+    return res.status(400).json({ message: 'Invalid priority' });
+  }
+
+  db.prepare(
+    'UPDATE tasks SET title = ?, description = ?, status = ?, priority = ? WHERE id = ?'
+  ).run(
+    title       ?? task.title,
+    description ?? task.description,
+    status      ?? task.status,
+    priority    ?? task.priority,
+    task.id
+  );
+
+  res.json({ message: 'Task updated' });
+});
+
+app.delete('/tasks/:id', authenticateToken, (req, res) => {
+  const task = db.prepare('SELECT id FROM tasks WHERE id = ? AND created_by = ?')
+    .get(req.params.id, req.user.id);
+
+  if (!task) return res.status(404).json({ message: 'Task not found' });
+
+  db.prepare('DELETE FROM tasks WHERE id = ?').run(task.id);
+  res.json({ message: 'Task deleted' });
 });
 
 app.listen(PORT, () => {

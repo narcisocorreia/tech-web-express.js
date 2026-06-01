@@ -4,6 +4,7 @@ import { LoginComponent } from './pages/login/login.component';
 import { RegisterComponent } from './pages/register/register.component';
 import { ProfileComponent } from './pages/profile/profile.component';
 import { EditProfileComponent } from './pages/edit-profile/edit-profile.component';
+import { TasksComponent } from './pages/tasks/tasks.component';
 import { authGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
@@ -16,4 +17,5 @@ export const routes: Routes = [
     component: EditProfileComponent,
     canActivate: [authGuard],
   },
+  { path: 'tasks', component: TasksComponent, canActivate: [authGuard] },
 ];

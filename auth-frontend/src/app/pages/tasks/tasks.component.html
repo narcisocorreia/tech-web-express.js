@@ -1,0 +1,210 @@
+<div class="container mt-4">
+  <div class="tasks-shell">
+    <div class="tasks-header">
+      <div>
+        <h2 class="mb-1">As minhas tarefas</h2>
+        <p class="text-muted mb-0">
+          Organiza, filtra e atualiza o estado das tuas tarefas num instante.
+        </p>
+      </div>
+      <button class="btn btn-primary" (click)="showForm = !showForm">
+        <i class="bi bi-plus-lg"></i>
+        Nova tarefa
+      </button>
+    </div>
+
+  <!-- Formulário de criação -->
+  @if (showForm) {
+    <div class="card mb-3 task-form">
+      <div class="card-body">
+        <div class="row g-2">
+        <div class="col-md-4">
+          <input
+            class="form-control"
+            placeholder="Título"
+            [(ngModel)]="newTask.title"
+          />
+        </div>
+        <div class="col-md-4">
+          <input
+            class="form-control"
+            placeholder="Descrição"
+            [(ngModel)]="newTask.description"
+          />
+        </div>
+        <div class="col-md-2">
+          <select class="form-select" [(ngModel)]="newTask.status">
+            <option value="pending">Pendente</option>
+            <option value="in_progress">Em progresso</option>
+            <option value="done">Concluído</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <select class="form-select" [(ngModel)]="newTask.priority">
+            <option value="low">Baixa</option>
+            <option value="medium">Média</option>
+            <option value="high">Alta</option>
+          </select>
+        </div>
+        <div class="col-12">
+          <button class="btn btn-success me-2" (click)="createTask()">
+            Guardar
+          </button>
+          <button class="btn btn-secondary" (click)="showForm = false">
+            Cancelar
+          </button>
+        </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Filtros -->
+  <div class="card tasks-toolbar mb-3">
+    <div class="card-body">
+      <div class="row g-2 align-items-center">
+        <div class="col-md-7">
+          <div class="input-group">
+            <span class="input-group-text">
+              <i class="bi bi-search"></i>
+            </span>
+            <input
+              class="form-control"
+              placeholder="Pesquisar por título..."
+              [(ngModel)]="search"
+              (ngModelChange)="onSearchChange()"
+            />
+          </div>
+        </div>
+        <div class="col-md-3">
+          <select
+            class="form-select"
+            [(ngModel)]="statusFilter"
+            (change)="loadTasks()"
+          >
+            <option value="">Todos os estados</option>
+            <option value="pending">Pendente</option>
+            <option value="in_progress">Em progresso</option>
+            <option value="done">Concluído</option>
+          </select>
+        </div>
+        <div class="col-md-2 text-md-end">
+          <span class="text-muted small">
+            {{ meta.total }} tarefa(s)
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabela -->
+  <table class="table table-hover tasks-table">
+    <thead>
+      <tr>
+        <th style="cursor: pointer" (click)="sortBy('title')">
+          Título {{ sort === "title" ? (order === "ASC" ? "↑" : "↓") : "" }}
+        </th>
+        <th style="cursor: pointer" (click)="sortBy('status')">
+          Estado {{ sort === "status" ? (order === "ASC" ? "↑" : "↓") : "" }}
+        </th>
+        <th style="cursor: pointer" (click)="sortBy('priority')">
+          Prioridade
+          {{ sort === "priority" ? (order === "ASC" ? "↑" : "↓") : "" }}
+        </th>
+        <th style="cursor: pointer" (click)="sortBy('created_at')">
+          Data {{ sort === "created_at" ? (order === "ASC" ? "↑" : "↓") : "" }}
+        </th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (task of tasks; track task.id) {
+        <tr>
+          <td>
+            <div class="d-flex flex-column">
+              <span class="fw-semibold">{{ task.title }}</span>
+              <button
+                class="btn btn-link btn-sm p-0 text-start task-desc-toggle"
+                (click)="toggleDescription(task.id)"
+              >
+                <i
+                  class="bi"
+                  [class.bi-chevron-down]="!isDescriptionOpen(task.id)"
+                  [class.bi-chevron-up]="isDescriptionOpen(task.id)"
+                ></i>
+                {{
+                  isDescriptionOpen(task.id)
+                    ? "Esconder descrição"
+                    : "Ver descrição"
+                }}
+              </button>
+            </div>
+          </td>
+          <td>
+            <select
+              class="form-select form-select-sm task-status-select"
+              [(ngModel)]="task.status"
+              (ngModelChange)="updateStatus(task, $event)"
+            >
+              <option value="pending">Pendente</option>
+              <option value="in_progress">Em progresso</option>
+              <option value="done">Concluído</option>
+            </select>
+          </td>
+          <td>
+            <span [class]="'badge bg-' + getPriorityBadge(task.priority)">
+              {{ getPriorityLabel(task.priority) }}
+            </span>
+          </td>
+          <td>{{ task.created_at | date: "dd/MM/yyyy" }}</td>
+          <td>
+            <button class="btn btn-sm btn-danger" (click)="deleteTask(task.id)">
+              <i class="bi bi-trash"></i>
+              Apagar
+            </button>
+          </td>
+        </tr>
+        @if (isDescriptionOpen(task.id)) {
+          <tr class="task-description-row">
+            <td colspan="5">
+              <div class="task-description">
+                {{ task.description || "Sem descrição" }}
+              </div>
+            </td>
+          </tr>
+        }
+      }
+    </tbody>
+  </table>
+
+  <!-- Paginação -->
+  <nav>
+    <ul class="pagination">
+      <li class="page-item" [class.disabled]="meta.page === 1">
+        <a
+          class="page-link"
+          style="cursor: pointer"
+          (click)="goToPage(meta.page - 1)"
+          >Anterior</a
+        >
+      </li>
+      @for (p of pages; track p) {
+        <li class="page-item" [class.active]="meta.page === p">
+          <a class="page-link" style="cursor: pointer" (click)="goToPage(p)">{{
+            p
+          }}</a>
+        </li>
+      }
+      <li class="page-item" [class.disabled]="meta.page === meta.totalPages">
+        <a
+          class="page-link"
+          style="cursor: pointer"
+          (click)="goToPage(meta.page + 1)"
+          >Próximo</a
+        >
+      </li>
+    </ul>
+  </nav>
+  <small class="text-muted">{{ meta.total }} tarefa(s) encontrada(s)</small>
+  </div>
+</div>

@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 
 import { environment } from '../../environments/environment';
 
@@ -38,6 +38,7 @@ export class AuthService {
   private http = inject(HttpClient);
 
   private apiUrl = environment.apiUrl + '/auth';
+  private tasksUrl = environment.apiUrl + '/tasks';
 
   // ── Token management ──────────────────────────────
   getToken() {
@@ -95,5 +96,28 @@ export class AuthService {
 
   deleteProfile() {
     return this.http.delete(`${this.apiUrl}/profile`);
+  }
+
+  // ── Tasks ──────────────────────────────────────────
+  getTasks(params: any) {
+    let httpParams = new HttpParams();
+    Object.keys(params).forEach((k) => {
+      if (params[k] !== null && params[k] !== undefined && params[k] !== '') {
+        httpParams = httpParams.set(k, params[k]);
+      }
+    });
+    return this.http.get(this.tasksUrl, { params: httpParams });
+  }
+
+  createTask(task: any) {
+    return this.http.post(this.tasksUrl, task);
+  }
+
+  updateTask(id: number, task: any) {
+    return this.http.put(`${this.tasksUrl}/${id}`, task);
+  }
+
+  deleteTask(id: number) {
+    return this.http.delete(`${this.tasksUrl}/${id}`);
   }
 }
