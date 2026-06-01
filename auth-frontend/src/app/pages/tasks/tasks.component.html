@@ -1,0 +1,151 @@
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>As minhas tarefas</h2>
+    <button class="btn btn-primary" (click)="showForm = !showForm">
+      Nova tarefa
+    </button>
+  </div>
+
+  <!-- Formulário de criação -->
+  @if (showForm) {
+    <div class="card mb-3 p-3">
+      <div class="row g-2">
+        <div class="col-md-4">
+          <input
+            class="form-control"
+            placeholder="Título"
+            [(ngModel)]="newTask.title"
+          />
+        </div>
+        <div class="col-md-4">
+          <input
+            class="form-control"
+            placeholder="Descrição"
+            [(ngModel)]="newTask.description"
+          />
+        </div>
+        <div class="col-md-2">
+          <select class="form-select" [(ngModel)]="newTask.status">
+            <option value="pending">Pendente</option>
+            <option value="in_progress">Em progresso</option>
+            <option value="done">Concluído</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <select class="form-select" [(ngModel)]="newTask.priority">
+            <option value="low">Baixa</option>
+            <option value="medium">Média</option>
+            <option value="high">Alta</option>
+          </select>
+        </div>
+        <div class="col-12">
+          <button class="btn btn-success me-2" (click)="createTask()">
+            Guardar
+          </button>
+          <button class="btn btn-secondary" (click)="showForm = false">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Filtros -->
+  <div class="row g-2 mb-3">
+    <div class="col-md-6">
+      <input
+        class="form-control"
+        placeholder="Pesquisar por título..."
+        [(ngModel)]="search"
+        (ngModelChange)="onSearchChange()"
+      />
+    </div>
+    <div class="col-md-3">
+      <select
+        class="form-select"
+        [(ngModel)]="statusFilter"
+        (change)="loadTasks()"
+      >
+        <option value="">Todos os estados</option>
+        <option value="pending">Pendente</option>
+        <option value="in_progress">Em progresso</option>
+        <option value="done">Concluído</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Tabela -->
+  <table class="table table-hover">
+    <thead>
+      <tr>
+        <th style="cursor: pointer" (click)="sortBy('title')">
+          Título {{ sort === "title" ? (order === "ASC" ? "↑" : "↓") : "" }}
+        </th>
+        <th style="cursor: pointer" (click)="sortBy('status')">
+          Estado {{ sort === "status" ? (order === "ASC" ? "↑" : "↓") : "" }}
+        </th>
+        <th style="cursor: pointer" (click)="sortBy('priority')">
+          Prioridade
+          {{ sort === "priority" ? (order === "ASC" ? "↑" : "↓") : "" }}
+        </th>
+        <th style="cursor: pointer" (click)="sortBy('created_at')">
+          Data {{ sort === "created_at" ? (order === "ASC" ? "↑" : "↓") : "" }}
+        </th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (task of tasks; track task.id) {
+        <tr>
+          <td>{{ task.title }}</td>
+          <td>
+            <span [class]="'badge bg-' + getStatusBadge(task.status)">{{
+              task.status
+            }}</span>
+          </td>
+          <td>
+            <span [class]="'badge bg-' + getPriorityBadge(task.priority)">{{
+              task.priority
+            }}</span>
+          </td>
+          <td>{{ task.created_at | date: "dd/MM/yyyy" }}</td>
+          <td>
+            <button class="btn btn-sm btn-danger" (click)="deleteTask(task.id)">
+              Apagar
+            </button>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+
+  <!-- Paginação -->
+  <nav>
+    <ul class="pagination">
+      <li class="page-item" [class.disabled]="meta.page === 1">
+        <a
+          class="page-link"
+          style="cursor: pointer"
+          (click)="goToPage(meta.page - 1)"
+          >Anterior</a
+        >
+      </li>
+      @for (p of pages; track p) {
+        <li class="page-item" [class.active]="meta.page === p">
+          <a class="page-link" style="cursor: pointer" (click)="goToPage(p)">{{
+            p
+          }}</a>
+        </li>
+      }
+      <li class="page-item" [class.disabled]="meta.page === meta.totalPages">
+        <a
+          class="page-link"
+          style="cursor: pointer"
+          (click)="goToPage(meta.page + 1)"
+          >Próximo</a
+        >
+      </li>
+    </ul>
+  </nav>
+  <small class="text-muted">{{ meta.total }} tarefa(s) encontrada(s)</small>
+</div>
