@@ -59,6 +59,17 @@
           <i class="bi bi-list-check"></i> Tarefas
         </a>
       </li>
+      @if (authService.getRole() === "admin") {
+        <li class="nav-item">
+          <a
+            class="nav-link d-flex align-items-center gap-2"
+            routerLink="/admin"
+            routerLinkActive="active"
+          >
+            <i class="bi bi-shield-shaded"></i> Admin
+          </a>
+        </li>
+      }
     </ul>
   </div>
 </nav>

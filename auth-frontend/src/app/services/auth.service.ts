@@ -61,6 +61,17 @@ export class AuthService {
     return !!this.getToken();
   }
 
+  getRole(): string {
+    const token = this.getToken();
+    if (!token) return '';
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.role || '';
+    } catch {
+      return '';
+    }
+  }
+
   logout() {
     const refreshToken = this.getRefreshToken();
     if (refreshToken) {
@@ -119,5 +130,30 @@ export class AuthService {
 
   deleteTask(id: number) {
     return this.http.delete(`${this.tasksUrl}/${id}`);
+  }
+
+  // ── Admin ──────────────────────────────────────────
+  private adminUrl = environment.apiUrl + '/admin';
+
+  getAdminUsers(params: { page: number; limit: number; search: string }) {
+    let httpParams = new HttpParams()
+      .set('page', params.page)
+      .set('limit', params.limit)
+      .set('search', params.search);
+    return this.http.get(`${this.adminUrl}/users`, { params: httpParams });
+  }
+
+  changeUserRole(userId: number, role: string) {
+    return this.http.put(`${this.adminUrl}/users/${userId}/role`, { role });
+  }
+
+  adminDeleteUser(userId: number) {
+    return this.http.delete(`${this.adminUrl}/users/${userId}`);
+  }
+
+  adminAssignTask(taskId: number, assignedTo: number) {
+    return this.http.put(`${this.adminUrl}/tasks/${taskId}/assign`, {
+      assigned_to: assignedTo,
+    });
   }
 }

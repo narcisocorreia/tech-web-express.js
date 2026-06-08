@@ -1,0 +1,64 @@
+<div class="container mt-4">
+  <h2>Painel de administração</h2>
+
+  <input
+    class="form-control mb-3"
+    placeholder="Pesquisar utilizador..."
+    [(ngModel)]="search"
+    (ngModelChange)="onSearchChange()"
+  />
+
+  <table class="table table-hover">
+    <thead>
+      <tr>
+        <th>Nome</th>
+        <th>Email</th>
+        <th>Role</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (user of users; track user.id) {
+        <tr>
+          <td>{{ user.name }}</td>
+          <td>{{ user.email }}</td>
+          <td>
+            <select
+              class="form-select form-select-sm role-select"
+              aria-label="Alterar role"
+              [value]="user.role"
+              (change)="changeRole(user.id, $any($event.target).value)"
+            >
+              <option value="user">user</option>
+              <option value="admin">admin</option>
+            </select>
+          </td>
+          <td>
+            <button class="btn btn-sm btn-danger" (click)="deleteUser(user.id)">
+              Apagar
+            </button>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+
+  <nav>
+    <ul class="pagination">
+      <li class="page-item" [class.disabled]="meta.page === 1">
+        <a class="page-link" (click)="goToPage(meta.page - 1)">Anterior</a>
+      </li>
+      @for (p of [].constructor(meta.totalPages); track $index) {
+        <li class="page-item" [class.active]="meta.page === $index + 1">
+          <a class="page-link" (click)="goToPage($index + 1)">{{
+            $index + 1
+          }}</a>
+        </li>
+      }
+      <li class="page-item" [class.disabled]="meta.page === meta.totalPages">
+        <a class="page-link" (click)="goToPage(meta.page + 1)">Próximo</a>
+      </li>
+    </ul>
+  </nav>
+  <small class="text-muted">{{ meta.total }} utilizador(es)</small>
+</div>

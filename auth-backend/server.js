@@ -41,7 +41,8 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     email TEXT NOT NULL UNIQUE,
-    password TEXT NOT NULL
+    password TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'user'
   );
   CREATE TABLE IF NOT EXISTS refresh_tokens (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -63,6 +64,12 @@ db.exec(`
     FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
   )
 `);
+
+// Migration: add role column if missing (for existing databases)
+const cols = db.pragma('table_info(users)').map(c => c.name);
+if (!cols.includes('role')) {
+  db.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'");
+}
 
 /**
  * SWAGGER CONFIGURATION
@@ -124,6 +131,15 @@ function authenticateToken(req, res, next) {
 
     next();
   });
+}
+
+function requireRole(...roles) {
+  return (req, res, next) => {
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({ message: 'Forbidden: insufficient permissions' });
+    }
+    next();
+  };
 }
 
 /**
@@ -267,7 +283,8 @@ app.post('/auth/login', async (req, res) => {
     {
       id: user.id,
       name: user.name,
-      email: user.email
+      email: user.email,
+      role: user.role
     },
     JWT_SECRET,
     {
@@ -285,7 +302,8 @@ app.post('/auth/login', async (req, res) => {
     user: {
       id: user.id,
       name: user.name,
-      email: user.email
+      email: user.email,
+      role: user.role
     }
   });
 });
@@ -467,12 +485,12 @@ app.post('/auth/refresh', (req, res) => {
   if (!stored) {
     return res.status(403).json({ message: 'Invalid refresh token' });
   }
-  const user = db.prepare('SELECT id, name, email FROM users WHERE id = ?').get(stored.user_id);
+  const user = db.prepare('SELECT id, name, email, role FROM users WHERE id = ?').get(stored.user_id);
   if (!user) {
     return res.status(404).json({ message: 'User not found' });
   }
   const accessToken = jwt.sign(
-    { id: user.id, name: user.name, email: user.email },
+    { id: user.id, name: user.name, email: user.email, role: user.role },
     JWT_SECRET,
     { expiresIn: '15m' }
   );
@@ -545,8 +563,8 @@ app.get('/tasks', authenticateToken, (req, res) => {
   const sort  = allowedSort.includes(req.query.sort) ? req.query.sort : 'created_at';
   const order = allowedOrder.includes(req.query.order?.toUpperCase()) ? req.query.order.toUpperCase() : 'DESC';
 
-  let where  = 'WHERE t.created_by = ? AND t.title LIKE ?';
-  let params = [req.user.id, search];
+  let where  = req.user.role === 'admin' ? 'WHERE t.title LIKE ?' : 'WHERE t.created_by = ? AND t.title LIKE ?';
+  let params = req.user.role === 'admin' ? [search] : [req.user.id, search];
 
   if (status) {
     where += ' AND t.status = ?';
@@ -610,6 +628,60 @@ app.delete('/tasks/:id', authenticateToken, (req, res) => {
 
   db.prepare('DELETE FROM tasks WHERE id = ?').run(task.id);
   res.json({ message: 'Task deleted' });
+});
+
+// ── ADMIN ──────────────────────────────────────────────────────────────────
+
+app.get('/admin/users', authenticateToken, requireRole('admin'), (req, res) => {
+  const page   = Math.max(1, parseInt(req.query.page)  || 1);
+  const limit  = Math.min(50, Math.max(1, parseInt(req.query.limit) || 10));
+  const offset = (page - 1) * limit;
+  const search = req.query.search ? `%${req.query.search}%` : '%';
+
+  const total = db.prepare(
+    "SELECT COUNT(*) as count FROM users WHERE name LIKE ? OR email LIKE ?"
+  ).get(search, search).count;
+
+  const users = db.prepare(
+    "SELECT id, name, email, role FROM users WHERE name LIKE ? OR email LIKE ? LIMIT ? OFFSET ?"
+  ).all(search, search, limit, offset);
+
+  res.json({ data: users, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } });
+});
+
+app.put('/admin/users/:id/role', authenticateToken, requireRole('admin'), (req, res) => {
+  const { role } = req.body;
+  if (!['user', 'admin'].includes(role)) {
+    return res.status(400).json({ message: 'Invalid role' });
+  }
+  const user = db.prepare('SELECT id FROM users WHERE id = ?').get(req.params.id);
+  if (!user) return res.status(404).json({ message: 'User not found' });
+
+  db.prepare('UPDATE users SET role = ? WHERE id = ?').run(role, req.params.id);
+  res.json({ message: 'Role updated' });
+});
+
+app.delete('/admin/users/:id', authenticateToken, requireRole('admin'), (req, res) => {
+  if (parseInt(req.params.id) === req.user.id) {
+    return res.status(400).json({ message: 'Cannot delete your own account' });
+  }
+  const user = db.prepare('SELECT id FROM users WHERE id = ?').get(req.params.id);
+  if (!user) return res.status(404).json({ message: 'User not found' });
+
+  db.prepare('DELETE FROM users WHERE id = ?').run(req.params.id);
+  res.json({ message: 'User deleted' });
+});
+
+app.put('/admin/tasks/:id/assign', authenticateToken, requireRole('admin'), (req, res) => {
+  const { assigned_to } = req.body;
+  const task = db.prepare('SELECT id FROM tasks WHERE id = ?').get(req.params.id);
+  if (!task) return res.status(404).json({ message: 'Task not found' });
+
+  const user = db.prepare('SELECT id FROM users WHERE id = ?').get(assigned_to);
+  if (!user) return res.status(404).json({ message: 'Target user not found' });
+
+  db.prepare('UPDATE tasks SET assigned_to = ? WHERE id = ?').run(assigned_to, req.params.id);
+  res.json({ message: 'Task assigned' });
 });
 
 app.listen(PORT, () => {
